@@ -1,0 +1,61 @@
+option java_package="com.twilio.open.protocol";
+option java_outer_classname="Metrics";
+
+import "calls.proto";
+
+message MetricAggregation {
+  optional string metric               = 1;
+  optional uint64 window_start         = 2;
+  optional uint64 window_end           = 3;
+  optional string window_interval      = 4;
+  optional uint32 samples              = 5;
+  optional Stats stats                 = 6;
+  optional Histogram histogram         = 7;
+  optional Dimensions dimensions       = 8;
+  optional string dimension_hash       = 10;
+}
+
+message Window {
+  optional string start    = 1; // iso8601 start time of window
+  optional uint64 start_ms = 2; // unix epoch millis for window start
+  optional string interval = 3; // logical window interval (1m,5m,15m,1h,1d,1m) etc
+  optional string end      = 4; // iso8601 end time of window
+  optional uint64 end_ms   = 5; // unix epoch millis for window end
+}
+
+// typical statistics (can do similar with a describe on a col in a data frame with spark sql
+message Stats {
+  optional double min      = 1;
+  optional double p25      = 2;
+  optional double median   = 3;
+  optional double p75      = 4;
+  optional double p90      = 5;
+  optional double p95      = 6;
+  optional double p99      = 7;
+  optional double max      = 8;
+  optional double mean     = 9;
+  optional double sd       = 10;
+  optional double variance = 11;
+}
+
+message Histogram {
+  optional double bin1    = 1;
+  optional double bin2    = 2;
+  optional double bin3    = 3;
+  optional double bin4    = 4;
+  optional double bin5    = 5;
+  optional double bin6    = 6;
+}
+
+message Metric {
+  optional uint64 timestamp        = 1;
+  optional string group_key        = 2;
+  optional string dimensional_hash = 3;
+  optional string metric_name      = 4;
+  optional string label            = 5;
+  optional float value             = 6;
+  optional string carrier          = 7;
+  optional string country          = 8;
+  optional string route            = 9;
+  optional string direction        = 10;
+}
