@@ -1,0 +1,36 @@
+appName: "streaming-trends-aggregation"
+triggerInterval: "10 seconds"
+outputMode: "update"
+checkpointPath: "/tmp/streaming-trends-aggregation/"
+windowInterval: 5
+watermarkInterval: 10
+core:
+  spark.scheduler.mode: "FIFO"
+  spark.port.maxRetries: 16
+  spark.driver.cores: 2
+  spark.driver.memory: "2g"
+  spark.executor.cores: 1
+  spark.executor.memory: "2g"
+  spark.cores.max: 4
+  spark.serializer: org.apache.spark.serializer.KryoSerializer
+  spark.fs.s3a.attempts.maximum: 100
+  spark.fs.s3a.threads.max: 512
+  spark.fs.s3a.threads.core: 30
+  spark.fs.s3a.multipart.purge: true
+  spark.fs.s3a.threads.keepalivetime: 240
+  spark.fs.s3a.fast.upload.buffer: "bytebuffer"
+  spark.fs.s3a.experimental.input.fadvise: "random"
+  spark.fs.s3a.impl: org.apache.hadoop.fs.s3a.S3AFileSystem
+
+callEventsTopic:
+  topic: "spark.summit.call.events"
+  subscriptionType: "subscribe"
+  conf:
+    kafka.bootstrap.servers: "localhost:9092"
+    kafka.metrics.num.samples: 4
+    startingOffsets: "earliest"
+    failOnDataLoss: false # set to true to fail the app when offsets are not available for assignment
+    kafkaConsumer.pollTimeoutMs: 5000 # increase in case of higher latency connections to Kafka
+    fetchOffset.numRetries: 20
+    fetchOffset.retryIntervalMs: 250 # increase or decrease (numRetries * retryInterval = total time to retry to fetch offsets)
+    maxOffsetsPerTrigger: 200000 # increase or decrease to change throughput (processed.rows.per.second) - can cause OutOfMemoryException if rate is too high

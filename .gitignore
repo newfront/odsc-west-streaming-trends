@@ -1,0 +1,5 @@
+.DS_Store
+metastore_db/*
+*/metastore_db/
+derby.log
+*/derby.log
