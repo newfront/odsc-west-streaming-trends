@@ -1,8 +1,11 @@
 /* spark is available via the command line in the spark-shell */
 import org.apache.spark.sql.{SparkSession, DataFrame}
+import spark.implicits._
+import org.apache.spark.sql.functions._
 
 val session: SparkSession = spark
-val WineReviewsCSV: DataFrame = session.read.option("inferSchema", "true").option("header","true").csv("../data/wine-reviews/winemag-data-130k-v2.csv")
+val dataSetLocation = "./data/wine-reviews"
+val WineReviewsCSV: DataFrame = session.read.option("inferSchema", "true").option("header","true").csv(s"$dataSetLocation/winemag-data-130k-v2.csv")
 
 /* WineReviewsCSV.printSchema */
 /*
@@ -23,5 +26,7 @@ root
  |-- winery: string (nullable = true)
  */
 
- WineReviewsCSV.createOrReplaceTempView("reviews")
- val twitterHandles = session.sql("select taster_name, taster_twitter_handle as twitter_handle from reviews where taster_twitter_handle IS NOT NULL")
+WineReviewsCSV.createOrReplaceTempView("reviews")
+val twitterHandles = session.sql("select taster_name, taster_twitter_handle as twitter_handle from reviews where taster_twitter_handle IS NOT NULL")
+val countByReviewer = twitterHandles.groupBy("twitter_handle").agg(count("twitter_handle") as "reviews")
+countByReviewer.sort(desc("reviews")).show(10, false)
