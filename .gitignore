@@ -3,3 +3,6 @@ metastore_db/*
 */metastore_db/
 derby.log
 */derby.log
+
+data/wine-reviews/*.csv
+data/wine-reviews/*.json

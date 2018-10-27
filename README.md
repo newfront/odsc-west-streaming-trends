@@ -3,3 +3,31 @@ All Data, Relevant Information, Scripts, and Applications for the Open Data Scie
 
 #### Data Set Information
 [Wine Reviews](https://www.kaggle.com/zynicide/wine-reviews) - Thanks to zynicide and kaggle.com for the data set.
+
+### Running the Code Examples
+All actions should be run from root of the odsc directory
+
+#### Playing with Coffee
+1. `spark-shell -i part2/coffee/basics.scala`
+2. `spark-shell -i part2/coffee/dataframes.scala`
+
+3. Requires 2 terminal windows
+3a. `nc -lk 9999`
+3b. `spark-shell -i part2/streaming_coffee.scala`
+
+##### Streaming Aggregations on Coffee Ratings
+~~~
+folgers,1
+folgers,2,"gross"
+ritual,5,"awesome"
+four barrel,5,"great"
+four barrel,5,"great stuff"
+four barrel,5,"really great stuff"
+~~~
+
+#### Playing with Wine
+1. `cd data/winereviews && unzip winemag-csv.zip && unzip winemag-json.zip`
+2. `spark-shell -i part2/wine/hello-wine.scala`
+3. `spark-shell -i part2/wine/wine_reviews.scala`
+
+
