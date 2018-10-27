@@ -1,6 +1,11 @@
 ### AUTOMATING TREND DISCOVERY ON STREAMING DATASETS WITH SPARK 2.3
 All Data, Relevant Information, Scripts, and Applications for the Open Data Science Conference (2018)
 
+#### Getting Started
+1. Download and Install Spark (http://spark.apache.org/downloads.html) or https://www.apache.org/dyn/closer.lua/spark/spark-2.3.1/spark-2.3.1-bin-hadoop2.7.tgz 
+
+2. Have maven 3 installed. `brew install maven3` if you want to build the Streaming Trend Discovery code
+
 #### Data Set Information
 [Wine Reviews](https://www.kaggle.com/zynicide/wine-reviews) - Thanks to zynicide and kaggle.com for the data set.
 
