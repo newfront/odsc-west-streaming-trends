@@ -1,0 +1,58 @@
+----------
+  Part 1
+----------
+
+Data Architecture. Fall back in love with your data again.
+- promises of data warehousing, data lakes in a large enterprise
+- broken promises of the data lake
+- how to embrace data architecture via data contracts, and support access control and GDPR (quick overview)
+ - data scientists - good food for thought if you are not in a position to directly impact change in the organizations data policies
+ - data engineers - data for good - data producers - remember you have the best idea of what your data is / how it works - make sure to document your data contracts - and consider how to make data work more cleanly for your company or yourself.
+
+Data Ingest Pipeline Architecture
+ - GDPR, Redacted Data Store, 30d vs Historic
+
+(20 - 25 minutes)
+
+----------
+  Part 2 (20 - 30 min)
+----------
+
+Using Spark to Clean and Explore your data
+ - using spark shell
+   - when to use simple aggregation
+   - how to use windowing
+ 
+ - creating simple coffee recommendations (streaming using terminal) - by 1 minute windows in real-time
+
+ - cleaning the WineReviews dataset
+ - mucking around with some simple ML (fpGrowth)
+ - how to extract tasting notes from Wine Reviews by Varietal
+  - how wine is like coffee and how these techniques help to increase your DS toolkit or how to use Spark & Spark SQL like a pro
+
+-----------
+  Part 3 (10-20 min)
+-----------
+
+Streaming Trend Discovery
+-----------
+ - why data contracts are very important here
+  - base of the data backbone of your systems
+  - minimize downtime etc
+ - when to apply this technique / how to apply this technique
+ - goals of trend discovery (baseline metrics - KPM) - dimensions
+ - walk through of the application
+   - key apis
+
+-----------
+  Part 4 (10-20 min)
+-----------
+ - testing windowed data easily
+  - MemoryStream
+ - hdfs vs s3 for checkpoints (lessons learned)
+ - kamon metrics and datadog agent
+
+--------------
+  Questions (10 min)
+--------------
+
