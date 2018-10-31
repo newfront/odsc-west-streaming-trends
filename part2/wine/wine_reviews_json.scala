@@ -12,6 +12,7 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.feature.OneHotEncoder
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.clustering.KMeans
 
 object WineUtils extends Serializable {
 	def loadData(path: String): DataFrame = {
@@ -129,13 +130,14 @@ object WineUtils extends Serializable {
 		val tastingNotes = varietyNames.map { variety => (variety, WineUtils.tastingNotes(spark.sql(s"select * from winereviews where `variety` == '$variety'"))) }
 		tastingNotes.toDF("variety", "tastingNotes")
 	}
-
 }
 
 val dataSetLocation = "./data/wine-reviews"
 val wineReviewsJsonLocation = s"$dataSetLocation/winemag-data-130k-v2.json"
 
-val wineReviewsJson = WineUtils.loadData(wineReviewsJsonLocation)
+// load reviews, cast points from String to Double for stats, drop original points and rename
+val wineReviewsJson = WineUtils.loadData(wineReviewsJsonLocation).withColumn("num_points", 'points.cast("Double")).drop("points").withColumnRenamed("num_points", "points")
+
 wineReviewsJson.cache // cache off the data in memory vs going back to source json for each transaction
 
 // understand a little more about the dataset
@@ -143,6 +145,39 @@ WineUtils.analyzeData(wineReviewsJson)
 
 // Create Temporary Table (for the SQL fans out there)
 wineReviewsJson.createOrReplaceTempView("winereviews")
+
+val priceStats = spark.sql("select min(price) as min, avg(price) as avg, percentile_approx(price, 0.1) as p10, percentile_approx(price, 0.25) as p25, percentile_approx(price, 0.5) as median, percentile_approx(price, 0.75) as p75, percentile_approx(price, 0.9) as p90, percentile_approx(price, 0.95) as p95, percentile_approx(price, 0.99) as p99, percentile_approx(price, 0.999) as p999, max(price) as max from winereviews")
+priceStats.show
+/*+---+------------------+---+---+------+---+---+---+---+----+----+
+|min|               avg|p10|p25|median|p75|p90|p95|p99|p999| max|
++---+------------------+---+---+------+---+---+---+---+----+----+
+|  4|35.363389129985535| 12| 17|    25| 42| 65| 85|155| 460|3300|
++---+------------------+---+---+------+---+---+---+---+----+----+*/
+
+wineReviewsJson.describe().show
+/*+-------+---------+--------------------+--------------------+------------------+--------+------------+-----------------+------------------+---------------------+--------------------+--------+--------+------------------+
+|summary|  country|         description|         designation|             price|province|    region_1|         region_2|       taster_name|taster_twitter_handle|               title| variety|  winery|            points|
++-------+---------+--------------------+--------------------+------------------+--------+------------+-----------------+------------------+---------------------+--------------------+--------+--------+------------------+
+|  count|   129908|              129971|               92506|            120975|  129908|      108724|            50511|            103727|                98758|              129971|  129970|  129971|            129971|
+|   mean|     null|                null|  1494.4644378698224|35.363389129985535|    null|        null|             null|              null|                 null|                null|    null|Infinity| 88.44713820775404|
+| stddev|     null|                null|    7115.55431803001|41.022217668087315|    null|        null|             null|              null|                 null|                null|    null|     NaN|3.0397302029160067|
+|    min|Argentina|"Chremisa," the a...|#19 Phantom Limb ...|                 4|  Achaia|     Abruzzo| California Other|Alexander Peartree|          @AnneInVino|1+1=3 2008 Rosé C...|Abouriou|   1+1=3|              80.0|
+|    max|  Uruguay|“Wow” is the firs...|                 “P”|              3300|    Župa|Zonda Valley|Willamette Valley|    Virginie Boone|       @worldwineguys|Štoka 2011 Izbran...| Žilavka|   Štoka|             100.0|
++-------+---------+--------------------+--------------------+------------------+--------+------------+-----------------+------------------+---------------------+--------------------+--------+--------+------------------+*/
+
+wineReviewsJson.select("price").summary().show
+/*+-------+------------------+                                                    
+|summary|             price|
++-------+------------------+
+|  count|            120975|
+|   mean|35.363389129985535|
+| stddev|41.022217668087315|
+|    min|                 4|
+|    25%|                17|
+|    50%|                25|
+|    75%|                42|
+|    max|              3300|
++-------+------------------+*/
 
 // Can now start to explore tasting notes by Variety
 // Take a look at Red Blends (I like them)
@@ -161,6 +196,44 @@ val topVarietyNotes = WineUtils.topTastingNotesByVariety(wineReviewsJson)
 //topVarietyNotes.show(20, false)
 topVarietyNotes.foreach { row => println(s"Wine Variety: ${row.getString(0)}\nTasting Notes: ${row.getString(1)}\n") }
 
-//val country_indexer = new StringIndexer().setInputCol("country").setOutputCol("country_index")
-//val country_encoder = new OneHotEncoder().setInputCol("country_index").setOutputCol("country_encoded")
+// wine point ranges [min:80, max:100], 80-84, 85-89, 90-94, 95-100
+val bucketing = wineReviewsJson.where(col("price").isNotNull.and(col("points").isNotNull.and(col("country").isNotNull.and(col("variety").isNotNull)))).withColumn("quality", when(col("points") < 85, 0).when(col("points") < 90, 1).when(col("points") < 95, 2).otherwise(3))
+//wineReviewsJson.stat.cov("price", "points") // 47.548
+//bucketing.stat.cov("price", "quality") // 9.245
+//bucketing.stat.cov("points", "quality") // 1.829
 
+// indexers can't handle null values
+val indexerCountry = new StringIndexer().setInputCol("country").setOutputCol("country_index")
+val encoderCountry = new OneHotEncoder().setInputCol("country_index").setOutputCol("country_encoded")
+
+val indexerVariety = new StringIndexer().setInputCol("variety").setOutputCol("variety_index")
+val encoderVariety = new OneHotEncoder().setInputCol("variety_index").setOutputCol("variety_encoded")
+
+val wineVectorAssembler = new VectorAssembler().setInputCols(Array("country_encoded", "variety_encoded", "price", "points", "quality")).setOutputCol("features")
+
+val transformerPipeline = new Pipeline().setStages(Array(indexerCountry, encoderCountry, indexerVariety, encoderVariety, wineVectorAssembler))
+
+val fittedPipeline = transformerPipeline.fit(bucketing)
+
+val Array(trainingData, testData) = bucketing.randomSplit(Array(0.7, 0.3))
+
+val transformedTraining = fittedPipeline.transform(trainingData)
+transformedTraining.cache()
+
+val kmeans = new KMeans().setK(6).setSeed(1L)
+val kmModel = kmeans.fit(transformedTraining)
+
+kmModel.computeCost(transformedTraining)
+
+val transformedTest = fittedPipeline.transform(testData)
+transformedTest.cache()
+kmModel.computeCost(transformedTest)
+
+val classified = kmModel.transform(transformedTest)
+
+classified.select("country","price","winery","variety","title","features","prediction").where(col("prediction").equalTo(0)).show(1000)
+classified.select("country","price","winery","variety","title","features","prediction").where(col("prediction").equalTo(1)).show(1000)
+classified.select("country","price","winery","variety","title","features","prediction").where(col("prediction").equalTo(2)).show(1000)
+classified.select("country","price","winery","variety","title","features","prediction").where(col("prediction").equalTo(3)).show(1000)
+classified.select("country","price","winery","variety","title","features","prediction").where(col("prediction").equalTo(4)).show(1000)
+classified.select("country","price","winery","variety","title","features","prediction").where(col("prediction").equalTo(5)).show(1000)
