@@ -34,5 +34,6 @@ four barrel,5,"really great stuff"
 1. `cd data/winereviews && unzip winemag-csv.zip && unzip winemag-json.zip`
 2. `spark-shell -i part2/wine/hello-wine.scala`
 3. `spark-shell -i part2/wine/wine_reviews.scala`
+3. `spark-shell -i part2/wine/wine_reviews_json.scala`
 
 
