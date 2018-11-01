@@ -77,6 +77,49 @@ Batch: 2
 3. `spark-shell -i part2/wine/wine_reviews.scala`
 3. `spark-shell -i part2/wine/wine_reviews_json.scala`
 
+#### Lessons Learned
+* Wine Reviews JSON data is easier and better to work with
+* SparkML **StopWordsRemover** allows us to quickly remove common words from the wine reviews
+* SparkML **FPGrowth** allows us to quickly generate Frequent Item Lists using the [Apriori Algorithm](https://en.wikipedia.org/wiki/Apriori_algorithm)
+* Generating Tasting Notes from Wine can be easy with a little trial and error
+~~~scala
+def tastingNotes(df: DataFrame): String = {
+  val fpg = new FPGrowth().setItemsCol("items").setMinSupport(0.05).setMinConfidence(0.6)
+  val remover = new StopWordsRemover().setInputCol("items").setOutputCol("filteredItems")
+  		
+  // Cleaning up the Wine Descriptions
+  val descriptions = df.select(col("description")).where(col("description").isNotNull).map { case Row(s:String) => s.replace(",","").replace(".","").split(" ").toSet.toSeq }.toDF("items")
+
+  // remove StopWords
+  val filteredDescriptions = remover.transform(descriptions)
+  val stopWordsFiltered = filteredDescriptions.select("filteredItems").toDF("items")
+
+  val model = fpg.fit(stopWordsFiltered)
+  val freqItems = model.freqItemsets.sort(desc("freq"))
+  val notes = freqItems.select("items").where(col("freq")>400)
+  val topWords = notes.flatMap { case Row(notes: Seq[String]) => notes }.groupBy("value").count().sort(desc("count"))
+  val tastingNotes = topWords.select("value").collect().map { case Row(s: String) => s }.toSeq.mkString(",")
+  tastingNotes
+}
+~~~
+
+~~~
+Wine Variety: Pinot Noir
+Tasting Notes: wine,flavors,cherry,fruit,Pinot,acidity,tannins,palate,raspberry,Noir,red,finish,ripe,oak,black,cola,aromas,Drink,spice,rich,dry,silky,texture,light,years,soft,fruits,nose,plum,structure,strawberry,juicy,character,complex,spicy,vanilla,vineyard,touch,new,earthy,cherries,bit,earth,cranberry,berry,fresh,dried,firm,flavor,dark,full,tea,age,sweet,notes,vintage,well,good,tart,drink,raspberries,crisp,shows,smoky,bottling,offers,bright
+
+Wine Variety: Bordeaux-style Red Blend
+Tasting Notes: wine,tannins,Cabernet,fruit,flavors,Merlot,Sauvignon,blend,ripe,fruits,Franc,acidity,black,Drink,rich,Petit,Verdot,juicy,structure,wood,firm,dry,currant,dark,well,aging,character,aromas,cherry,berry,blackberry,spice,structured,dense,drink,fruity,years,red,soft,still,ready,tannic,2017,fine,solid,2018,fresh,Malbec,Barrel,full,concentrated,age,attractive,texture,finish,sample,shows,balanced,core,balance,palate,oak,fruitiness,Bordeaux,chocolate,smooth,sweet,plum,notes,vintage,good,give,smoky,weight,also
+
+Wine Variety: Riesling
+Tasting Notes: flavors,palate,finish,Riesling,acidity,dry,wine,lemon,notes,peach,apple,fruit,nose,lime,aromas,fresh,long,sweet,citrus,ripe,Drink,juicy,honey,orange,green,refreshing,off-dry,stone,apricot,mineral,pear,grapefruit,white,zesty,freshness,concentrated,minerality,tangerine,yet,style,tart,crisp,fruity
+
+Wine Variety: Sauvignon Blanc
+Tasting Notes: flavors,wine,finish,aromas,palate,acidity,Blanc,Sauvignon,green,citrus,fruit,crisp,grapefruit,apple,fresh,lime,nose,texture,ripe,Drink,rich,tropical,dry,white,lemon,fruits,pineapple,clean,notes,melon,peach,drink
+
+Wine Variety: Syrah
+Tasting Notes: flavors,wine,Syrah,fruit,black,aromas,pepper,finish,tannins,palate,cherry,blackberry,acidity,Drink,meat,rich,berry,dark,oak,spice,chocolate,nose,plum,notes,shows,ripe
+~~~
+
 #### Spark SQL Tricks
 [Working with Apache Spark DataFrames, Json and the Good Ol StructType](https://medium.com/@newfrontcreative/working-with-apache-spark-dataframes-json-and-the-good-ol-structtype-6291bdcd44bd)
 
