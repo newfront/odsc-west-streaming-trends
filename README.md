@@ -4,9 +4,12 @@ All Data, Relevant Information, Scripts, and Applications for the Open Data Scie
 #### The Speaker
 **Scott Haines**
 I work at [Twilio](https://www.twilio.com/)
-[Medium](https://medium.com/@newfrontcreative)
-[Twitter](https://twitter.com/newfront)
-[LinkedIn](https://www.linkedin.com/in/scotthaines/)
+
+Places I exist online
+* [Github - newfront](https://github.com/newfront)
+* [Medium](https://medium.com/@newfrontcreative)
+* [Twitter](https://twitter.com/newfront)
+* [LinkedIn](https://www.linkedin.com/in/scotthaines/)
 
 #### Getting Started
 1. Download and Install Spark (http://spark.apache.org/downloads.html) or https://www.apache.org/dyn/closer.lua/spark/spark-2.3.1/spark-2.3.1-bin-hadoop2.7.tgz 
