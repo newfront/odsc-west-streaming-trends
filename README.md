@@ -17,10 +17,11 @@ All actions should be run from root of the odsc directory
 2. `spark-shell -i part2/coffee/dataframes.scala`
 
 3. Requires 2 terminal windows
-3a. `nc -lk 9999`
-3b. `spark-shell -i part2/streaming_coffee.scala`
+* 3a. `nc -lk 9999`
+* 3b. `spark-shell -i part2/streaming_coffee.scala`
 
 ##### Streaming Aggregations on Coffee Ratings
+Now in the terminal window (nc -lk 9999) just copy and paste each of the following lines. nc -lk takes stdin and spark will pick up from that socket connection.
 ~~~
 folgers,1
 folgers,2,"gross"
@@ -28,6 +29,36 @@ ritual,5,"awesome"
 four barrel,5,"great"
 four barrel,5,"great stuff"
 four barrel,5,"really great stuff"
+~~~
+
+In the spark streaming coffee terminal you should see the following
+~~~
+-------------------------------------------                                     
+Batch: 0
+-------------------------------------------
++-------+------+
+|   name|rating|
++-------+------+
+|folgers|   1.0|
++-------+------+
+
+-------------------------------------------                                     
+Batch: 1
+-------------------------------------------
++-------+------+
+|   name|rating|
++-------+------+
+|folgers|   1.5|
++-------+------+
+
+-------------------------------------------                                     
+Batch: 2
+-------------------------------------------
++-------+------------------+
+|   name|            rating|
++-------+------------------+
+|folgers|2.6666666666666665|
++-------+------------------+
 ~~~
 
 #### Playing with Wine
