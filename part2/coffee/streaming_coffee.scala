@@ -37,16 +37,9 @@ val availableCoffee = Seq(
   Coffee(name="french collection", roast=3, region="France", bean="arabica", flavors=Seq("nutty", "fruity"))
   )
 
-val coffeeStandDF = sparkSession.sparkContext.parallelize(availableCoffee, 3).toDF
+
 
 import spark.implicits._
-
-
-val coffeeRatingsReader = sparkSession.readStream.format("socket").option("host", "localhost").option("port", 9999).load()
-//coffeeRatingsReader.printSchema
-// - value:String
-
-val rawRatingsData: Dataset[String] = coffeeRatingsReader.as[String]
 
 def asCoffeeRating(input: String): CoffeeRating = {
     val data = input.split(",")
@@ -56,13 +49,13 @@ def asCoffeeRating(input: String): CoffeeRating = {
     CoffeeRating(coffeeName, score, note)
 }
 
-// convert the input
+val coffeeStandDF = sparkSession.sparkContext.parallelize(availableCoffee, 3).toDF
+val coffeeRatingsReader = sparkSession.readStream.format("socket").option("host", "localhost").option("port", 9999).load()
+val rawRatingsData: Dataset[String] = coffeeRatingsReader.as[String]
+
 val coffeeRatingsInput = rawRatingsData.map { asCoffeeRating }.toDF
-
 val coffeeAndRatingsDF = coffeeStandDF.join(coffeeRatingsInput, coffeeStandDF("name") === coffeeRatingsInput("coffeeName"))
-
 val averageRatings = coffeeAndRatingsDF.groupBy(col("name")).agg(avg("score") as "rating").sort(desc("rating"))
-
 val query = averageRatings.writeStream.outputMode("complete").format("console").start()
 
 // nc -lk 9999
