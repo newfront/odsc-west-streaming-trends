@@ -2,6 +2,7 @@
 import org.apache.spark.sql.types._
 import spark.implicits._
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{DataFrame, Dataset, Column, Row}
 
 case class Coffee(
   name: String,
@@ -37,6 +38,19 @@ val rawCoffeeRatings = Seq(
   CoffeeRating("four barrel",5,Some("my fav")),
   CoffeeRating("ritual",4)
   )
+
+def expandArray(df: DataFrame, col: Column): DataFrame = {
+  val colName = col.toString()
+  val values = df
+    .selectExpr(s"explode($colName) as $colName")
+    .select(col).distinct()
+    .map { _.getString(0) }
+    .collect().toSeq
+  val expandedRows = values.foldLeft[DataFrame](df)( (d, v) =>
+    d.withColumn(v, when(array_contains(col, v), 1).otherwise(0))
+  )
+  expandedRows
+}
 
 /*
 val coffeeStand = spark.createDataset(availableCoffee)

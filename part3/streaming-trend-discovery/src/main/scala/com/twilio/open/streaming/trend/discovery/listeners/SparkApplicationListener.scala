@@ -58,42 +58,54 @@ class SparkApplicationListener(spark: SparkSession) extends SparkListener {
     metricsModule.histogram("spark.task.duration", taskTags).record(taskInfo.duration)
 
     val taskMetrics = taskEnd.taskMetrics
-    val recordsRead = taskMetrics.inputMetrics.recordsRead
-    val bytesRead = taskMetrics.inputMetrics.bytesRead
-    val recordsWritten = taskMetrics.outputMetrics.recordsWritten
-    val bytesWritten = taskMetrics.outputMetrics.bytesWritten
-    val diskBytesSpilled = taskMetrics.diskBytesSpilled
+    if (taskMetrics != null && taskMetrics.inputMetrics != null && taskMetrics.outputMetrics != null) {
+      val recordsRead = taskMetrics.inputMetrics.recordsRead
+      val bytesRead = taskMetrics.inputMetrics.bytesRead
+      val recordsWritten = taskMetrics.outputMetrics.recordsWritten
+      val bytesWritten = taskMetrics.outputMetrics.bytesWritten
 
-    val executorCPUTime = taskMetrics.executorCpuTime
-    metricsModule.histogram("spark.task.executor.cpu.time", taskTags).record(executorCPUTime)
+      val executorCPUTime = taskMetrics.executorCpuTime
+      metricsModule.histogram("spark.task.executor.cpu.time", taskTags).record(executorCPUTime)
 
-    val jvmGCTime = taskMetrics.jvmGCTime
-    metricsModule.histogram("spark.task.jvm.gc.time", taskTags).record(jvmGCTime)
+      val jvmGCTime = taskMetrics.jvmGCTime
+      metricsModule.histogram("spark.task.jvm.gc.time", taskTags).record(jvmGCTime)
 
-    val executorDeserializationCPUTime = taskMetrics.executorDeserializeCpuTime
-    val executorDeserializationTime = taskMetrics.executorDeserializeTime
-    val executorRunTime = taskMetrics.executorRunTime
-    val resultSerialzationTime = taskMetrics.resultSerializationTime
-    val resultSize = taskMetrics.resultSize
-    val peakExecutionMemory = taskMetrics.peakExecutionMemory
+      val executorRunTime = taskMetrics.executorRunTime
+      metricsModule.histogram("spark.task.executor.run.time", taskTags).record(executorRunTime)
 
+      // memory health
+      val diskBytesSpilled = taskMetrics.diskBytesSpilled
+      metricsModule.histogram("spark.task.disk.bytes.spilled", taskTags).record(diskBytesSpilled)
 
+      val memoryBytesSpilled = taskMetrics.memoryBytesSpilled
+      metricsModule.histogram("spark.task.memory.bytes.spilled", taskTags).record(memoryBytesSpilled)
 
-    if (log.isDebugEnabled) {
-      log.debug(s"task.end stage.id=$stageId stage.attempt.id=$stageAttemptId records.read=$recordsRead " +
-        s"bytes.read=$bytesRead records.written=$recordsWritten bytes.written=$bytesWritten " +
-        s"disk.bytes.spilled=$diskBytesSpilled executor.cpu.time=$executorCPUTime " +
-        s"executor.deserialization.cpu.time=$executorDeserializationCPUTime " +
-        s"executor.deserialization.time=$executorDeserializationTime executor.run.time=$executorRunTime " +
-        s"jvm.gc.time=$jvmGCTime result.size=$resultSize result.serialization.time=$resultSerialzationTime " +
-        s"peak.execution.memory=$peakExecutionMemory")
+      val peakExecutionMemory = taskMetrics.peakExecutionMemory
+      metricsModule.histogram("spark.task.peak.execution.memory", taskTags).record(peakExecutionMemory)
+
+      val resultSize = taskMetrics.resultSize
+      metricsModule.histogram("spark.task.result.size", taskTags).record(resultSize)
+
+      val executorDeserializationCPUTime = taskMetrics.executorDeserializeCpuTime
+      val executorDeserializationTime = taskMetrics.executorDeserializeTime
+      val resultSerializationTime = taskMetrics.resultSerializationTime
+
+      if (log.isDebugEnabled) {
+        log.debug(s"task.end stage.id=$stageId stage.attempt.id=$stageAttemptId records.read=$recordsRead " +
+          s"bytes.read=$bytesRead records.written=$recordsWritten bytes.written=$bytesWritten " +
+          s"disk.bytes.spilled=$diskBytesSpilled executor.cpu.time=$executorCPUTime " +
+          s"executor.deserialization.cpu.time=$executorDeserializationCPUTime " +
+          s"executor.deserialization.time=$executorDeserializationTime executor.run.time=$executorRunTime " +
+          s"jvm.gc.time=$jvmGCTime result.size=$resultSize result.serialization.time=$resultSerializationTime " +
+          s"peak.execution.memory=$peakExecutionMemory")
+      }
     }
 
     // track task success / failure
     val taskOutcomeTracker = if (taskInfo.failed) "spark.task.failed" else "spark.task.completed"
     metricsModule.counter(taskOutcomeTracker, taskTags).increment()
 
-    // note - you can connect these exceptions to what ever system you use to track lifecycle (rollbar, etc)
+    // todo - connect these warn/error to rollbar
     taskEnd.reason match {
       case Success =>
         log.debug(s"completed:Success taskId=$taskId taskType=${taskEnd.taskType}")
