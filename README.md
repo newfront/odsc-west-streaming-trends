@@ -1,6 +1,13 @@
 ### AUTOMATING TREND DISCOVERY ON STREAMING DATASETS WITH SPARK 2.3
 All Data, Relevant Information, Scripts, and Applications for the Open Data Science Conference (2018)
 
+#### The Speaker
+**Scott Haines**
+I work at [Twilio](https://www.twilio.com/)
+[Medium](https://medium.com/@newfrontcreative)
+[Twitter](https://twitter.com/newfront)
+[LinkedIn](https://www.linkedin.com/in/scotthaines/)
+
 #### Getting Started
 1. Download and Install Spark (http://spark.apache.org/downloads.html) or https://www.apache.org/dyn/closer.lua/spark/spark-2.3.1/spark-2.3.1-bin-hadoop2.7.tgz 
 
@@ -66,6 +73,9 @@ Batch: 2
 2. `spark-shell -i part2/wine/hello-wine.scala`
 3. `spark-shell -i part2/wine/wine_reviews.scala`
 3. `spark-shell -i part2/wine/wine_reviews_json.scala`
+
+#### Spark SQL Tricks
+[Working with Apache Spark DataFrames, Json and the Good Ol StructType](https://medium.com/@newfrontcreative/working-with-apache-spark-dataframes-json-and-the-good-ol-structtype-6291bdcd44bd)
 
 ### Streaming Trend Discovery (part3)
 Important Technologies and Concepts
