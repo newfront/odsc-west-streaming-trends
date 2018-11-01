@@ -16,7 +16,7 @@ import org.apache.spark.ml.clustering.KMeans
 
 object WineUtils extends Serializable {
 	def loadData(path: String): DataFrame = {
-		spark.read.option("inferSchema", "false").option("inferSchema", "true").json(path)
+		spark.read.option("inferSchema", "true").json(path)
 	}
 
 	def analyzeData(df: DataFrame): Unit = {
@@ -203,41 +203,29 @@ wineReviewsJson.cache // cache off the data in memory vs going back to source js
 wineReviewsJson.createOrReplaceTempView("winereviews")
 
 // 1.) understand a little more about the dataset
-/*
 WineUtils.analyzeData(wineReviewsJson)
-*/
 
 // Can now start to explore tasting notes by Variety
 // 2.) Take a look at Red Blends (I like them)
-/*
 val redBlends = spark.sql("select * from winereviews where `variety` == 'Red Blend'")
 redBlends.cache
 redBlends.explain(true)
 val redBlendTastingNotes = WineUtils.tastingNotes(redBlends)
-*/
 
 // 3.) 
-/*
 val topVarietyNotes = WineUtils.topTastingNotesByVariety(wineReviewsJson)
 topVarietyNotes.show(20, false)
 topVarietyNotes.foreach { row => println(s"Wine Variety: ${row.getString(0)}\nTasting Notes: ${row.getString(1)}\n") }
-*/
+
 
 // 4.) wine point ranges [min:80, max:100], 80-84, 85-89, 90-94, 95-100
-/*val bucketing = wineReviewsJson.where(col("price").isNotNull.and(col("points").isNotNull.and(col("country").isNotNull.and(col("variety").isNotNull)))).withColumn("quality", when(col("points") < 85, 0).when(col("points") < 90, 1).when(col("points") < 95, 2).otherwise(3))
-val moreStats = Seq(
-	("price_points_covariance", bucketing.stat.cov("price", "points")), // 47.548
-	("price_quality_covariance", bucketing.stat.cov("price", "quality")), // 9.245
-	("points_quality_covariance", bucketing.stat.cov("points", "quality")), // 1.829
-	("points_quality_correlation", bucketing.stat.corr("points", "quality")),
-	("price_points_correlation", bucketing.stat.corr("price", "points")),
-	("price_qualty_correlation", bucketing.stat.corr("price", "quality"))
-).toDF("label", "value")*/
+val bucketing = wineReviewsJson.where(col("price").isNotNull.and(col("points").isNotNull.and(col("country").isNotNull.and(col("variety").isNotNull)))).withColumn("quality", when(col("points") < 85, 0).when(col("points") < 90, 1).when(col("points") < 95, 2).otherwise(3))
+val moreStats = Seq(("price_points_covariance", bucketing.stat.cov("price", "points")),("price_quality_covariance", bucketing.stat.cov("price", "quality")),("points_quality_covariance", bucketing.stat.cov("points", "quality")),("points_quality_correlation", bucketing.stat.corr("points", "quality")),("price_points_correlation", bucketing.stat.corr("price", "points")),("price_qualty_correlation", bucketing.stat.corr("price", "quality"))).toDF("label", "value")*/
 
 // 5.) for fun - some simple clustering (kmeans with 6 cluster centers, 0-5 gives us those 6 clusters)
-/*val wineClusters = WineUtils.kmeansWine(bucketing)
+val wineClusters = WineUtils.kmeansWine(bucketing)
 (0 to 5).map { i =>
-	val cluster = wineClusters.select("country","price","points","winery","variety","title","features","prediction").where(col("prediction").equalTo(i))
+    val cluster = wineClusters.select("country","price","points","winery","variety","title","features","prediction").where(col("prediction").equalTo(i))
 	cluster
 		.groupBy("country")
 		.agg(
@@ -251,4 +239,4 @@ val moreStats = Seq(
 		)
 		.sort(desc("wineries"))
 		.show(50, false)
-}*/
+}
