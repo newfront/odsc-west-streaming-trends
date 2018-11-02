@@ -220,7 +220,7 @@ topVarietyNotes.foreach { row => println(s"Wine Variety: ${row.getString(0)}\nTa
 
 // 4.) wine point ranges [min:80, max:100], 80-84, 85-89, 90-94, 95-100
 val bucketing = wineReviewsJson.where(col("price").isNotNull.and(col("points").isNotNull.and(col("country").isNotNull.and(col("variety").isNotNull)))).withColumn("quality", when(col("points") < 85, 0).when(col("points") < 90, 1).when(col("points") < 95, 2).otherwise(3))
-val moreStats = Seq(("price_points_covariance", bucketing.stat.cov("price", "points")),("price_quality_covariance", bucketing.stat.cov("price", "quality")),("points_quality_covariance", bucketing.stat.cov("points", "quality")),("points_quality_correlation", bucketing.stat.corr("points", "quality")),("price_points_correlation", bucketing.stat.corr("price", "points")),("price_qualty_correlation", bucketing.stat.corr("price", "quality"))).toDF("label", "value")*/
+val moreStats = Seq(("price_points_covariance", bucketing.stat.cov("price", "points")),("price_quality_covariance", bucketing.stat.cov("price", "quality")),("points_quality_covariance", bucketing.stat.cov("points", "quality")),("points_quality_correlation", bucketing.stat.corr("points", "quality")),("price_points_correlation", bucketing.stat.corr("price", "points")),("price_qualty_correlation", bucketing.stat.corr("price", "quality"))).toDF("label", "value")
 
 // 5.) for fun - some simple clustering (kmeans with 6 cluster centers, 0-5 gives us those 6 clusters)
 val wineClusters = WineUtils.kmeansWine(bucketing)
